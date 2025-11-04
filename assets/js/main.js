@@ -155,6 +155,14 @@ let state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
             <button class="icon-btn delete" title="Excluir"><i class="fa-solid fa-trash"></i></button>
           </div>
         `;
+
+        // Expande/colapsa ao clicar no card
+        card.addEventListener('click', (e) => {
+          // evita conflito com botões dentro do card
+          if (e.target.closest('.icon-btn')) return;
+          card.classList.toggle('expanded');
+        });
+
         // events
         card.querySelector('.toggle').onclick = (e) => {
           e.stopPropagation();

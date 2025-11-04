@@ -77,6 +77,8 @@
       box-shadow: 0 6px 18px rgba(82, 71, 128, 0.6);
       margin-bottom: 12px;
       border: 1px solid rgba(0, 0, 0, 0.03);
+      transition: all 0.25s ease;
+      cursor: pointer;
     }
 
     .task .left {
@@ -102,6 +104,21 @@
       display: flex;
       align-items: center;
       gap: 8px;
+    }
+
+    .task.expanded {
+      background: #ffffff;
+      color: var(--text);
+      white-space: normal !important;
+      overflow: visible !important;
+      text-overflow: unset !important;
+      align-items: flex-start;
+    }
+
+    .task.expanded span {
+      white-space: normal !important;
+      overflow: visible !important;
+      text-overflow: unset !important;
     }
 
     .icon-btn {
@@ -355,10 +372,13 @@
     }
 
     @media(min-width:560px) {
+
+
       .app {
         border-radius: 12px;
         margin-top: 18px;
         margin-bottom: 18px;
         overflow: visible
       }
+
     }
