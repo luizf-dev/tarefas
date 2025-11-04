@@ -31,24 +31,12 @@ let state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
     const themeAlt = document.getElementById('themeAlt');
 
 
-    const installBtn = document.getElementById('installBtn');
-    let deferredPrompt;
+    const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches
+      || window.navigator.standalone === true;
 
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      installBtn.style.display = 'block'; // mostra o botão
-    });
-
-    installBtn.addEventListener('click', async () => {
-      if (!deferredPrompt) return;
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        console.log('Usuário aceitou instalar o app');
-      }
-      deferredPrompt = null;
-    });
+    if (isInStandaloneMode) {
+      document.getElementById('installBtn').style.display = 'none';
+    }    
 
 
     /* ======= Helpers ======= */
@@ -323,6 +311,45 @@ let state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
     }
 
 
+
+     /* ======= Touch gestures to close side drawers ======= */
+    let touchStartX = 0;
+    let touchEndX = 0;
+    let touchStartY = 0;
+    let touchEndY = 0;
+
+    document.addEventListener('touchstart', (e) => {
+      const touch = e.changedTouches[0];
+      touchStartX = touch.pageX;
+      touchStartY = touch.pageY;
+    });
+
+    document.addEventListener('touchmove', (e) => {
+      const touch = e.changedTouches[0];
+      touchEndX = touch.pageX;
+      touchEndY = touch.pageY;
+    });
+
+    document.addEventListener('touchend', () => {
+      const deltaX = touchEndX - touchStartX;
+      const deltaY = Math.abs(touchEndY - touchStartY);
+
+      // Ignora gestos verticais ou muito curtos
+      if (Math.abs(deltaX) < 50 || deltaY > 80) return;
+
+      // 👉 Deslizar para a direita fecha o drawer direito
+      if (deltaX > 50 && rightDrawer.classList.contains('active')) {
+        closeRightDrawer();
+      }
+
+      // 👈 Deslizar para a esquerda fecha o drawer esquerdo
+      if (deltaX < -50 && leftDrawer.classList.contains('active')) {
+        closeLeftDrawer();
+      }
+    });
+
+
+
     /* ======= Init ======= */
     window.onload = () => {
       render();
@@ -338,10 +365,10 @@ let state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
     backdrop.addEventListener('touchmove', (e)=> e.preventDefault(), { passive:false });
 
 
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js')
-          .then(reg => console.log('Service Worker registrado:', reg))
-          .catch(err => console.error('Erro ao registrar Service Worker:', err));
-      });
-    }
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/service-worker.js')
+        .then(reg => console.log('Service Worker registrado:', reg))
+        .catch(err => console.error('Erro ao registrar Service Worker:', err));
+    });
+  }

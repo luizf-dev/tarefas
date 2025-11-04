@@ -271,6 +271,10 @@
       left: 0
     }
 
+    .listsArea{
+      overflow-y: auto; /* habilita scroll apenas na lista */
+    }
+
     .drawer h4 {
       margin: 0 0 12px 0;
       color: var(--primary);
@@ -286,8 +290,6 @@
       justify-content: space-between;
       gap: 8px;
       border: 1px solid rgba(0, 0, 0, 0.06);
-      box-shadow: 0 6px 18px rgba(82, 71, 128, 0.6);
-
       cursor: pointer;
     }
 
