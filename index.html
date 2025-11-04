@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Lista de Tarefas</title>
+  <link rel="shortcut icon" href="/assets/img/logo.svg" type="image/x-icon">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/assets/css/style.css" />
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#524780">
+</head>
+<body>  
+    <div class="app" id="app">
+    <header class="app-header">Minhas Tarefas</header>
+
+    <main class="content" id="content">
+      <!-- Lista de tarefas renderizada aqui -->
+    </main>
+
+    <!-- Bottom navigation bar -->
+    <div class="bottom-bar" aria-hidden="false">
+      <button class="small-btn" id="listsBtn" title="Minhas listas"><i class="fa-solid fa-list"></i></button>
+
+      <div style="width:72px"></div> <!-- spacer so center is visually centered -->
+
+      <button class="small-btn" id="settingsBtn" title="Configurações"><i class="fa-solid fa-gear"></i></button>
+
+      <!-- Floating central add -->
+      <button class="fab" id="fabBtn" aria-label="Adicionar tarefa">
+        <i class="fa-solid fa-plus"></i>
+      </button>
+    </div>
+
+    <!-- Backdrop -->
+    <div class="sheet-backdrop" id="backdrop"></div>
+
+    <!-- Bottom sheet (nova tarefa) -->
+    <div class="sheet" id="sheet">
+      <h3>Nova Tarefa</h3>
+
+      <div class="form-row">
+        <input type="text" id="newTaskText" placeholder="O que você precisa fazer?" />
+      </div>
+
+      <div class="form-row">
+        <select id="newTaskList"></select>
+      </div>
+
+      <button class="save-btn" id="saveTask">Salvar tarefa</button>
+    </div>
+
+    <!-- Left drawer: Minhas listas -->
+    <aside class="drawer" id="leftDrawer">
+      <h4>Minhas Listas</h4>
+      <div id="listsArea"></div>
+
+      <div style="height:8px"></div>
+      <div class="new-list-row">
+        <input type="text" id="newListName" placeholder="Nova lista..." />
+        <button class="add-list-btn" id="createListBtn"><i class="fa-solid fa-plus"></i></button>
+      </div>
+    </aside>
+
+    <!-- Right drawer: Configurações -->
+    <aside class="drawer-right" id="rightDrawer">
+      <h4>Configurações</h4>      
+      <div style="margin-top:10px;">
+        <div class="muted">Tema</div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="icon-btn" id="themeDefault">Light</button>
+          <button class="icon-btn" id="themeAlt">Dark</button>
+        </div>
+      </div>
+
+      <div style="margin-top:18px">
+        <div class="muted">Backup / Reset</div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="icon-btn" id="exportBtn">Exportar Backup</button>
+          <button class="icon-btn" id="resetBtn">Reset</button>
+        </div>
+      </div>
+
+      <button id="installBtn" class="drawer-btn">
+        Instalar Aplicativo <i class="fa-solid fa-download"></i>
+      </button>
+
+
+      <div style="margin-top:18px" class="muted center">Feche deslizando ou tocando fora.</div>
+    </aside>
+  </div>
+
+    <script src="/assets/js/main.js"></script>
+</body>
+</html>

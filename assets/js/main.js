@@ -1,0 +1,347 @@
+ /* ======= Data model (localStorage) ======= */
+const STORAGE_KEY = 'todo_app_v2';
+let state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
+  lists: {}, // começa vazio
+  current: null, // nenhuma lista selecionada
+  theme: 'default'
+};
+
+
+    /* ======= Elements ======= */
+    const content = document.getElementById('content');
+    const fabBtn = document.getElementById('fabBtn');
+    const sheet = document.getElementById('sheet');
+    const backdrop = document.getElementById('backdrop');
+    const newTaskText = document.getElementById('newTaskText');
+    const newTaskList = document.getElementById('newTaskList');
+    const saveTask = document.getElementById('saveTask');
+
+    const listsBtn = document.getElementById('listsBtn');
+    const leftDrawer = document.getElementById('leftDrawer');
+    const listsArea = document.getElementById('listsArea');
+    const newListName = document.getElementById('newListName');
+    const createListBtn = document.getElementById('createListBtn');
+
+    const settingsBtn = document.getElementById('settingsBtn');
+    const rightDrawer = document.getElementById('rightDrawer');
+
+    const exportBtn = document.getElementById('exportBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const themeDefault = document.getElementById('themeDefault');
+    const themeAlt = document.getElementById('themeAlt');
+
+
+    const installBtn = document.getElementById('installBtn');
+    let deferredPrompt;
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      installBtn.style.display = 'block'; // mostra o botão
+    });
+
+    installBtn.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        console.log('Usuário aceitou instalar o app');
+      }
+      deferredPrompt = null;
+    });
+
+
+    /* ======= Helpers ======= */
+    function save(){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function openSheet(){
+      sheet.classList.add('active');
+      backdrop.classList.add('active');
+      newTaskText.focus();
+      populateListOptions();
+    }
+    function closeSheet(){
+      sheet.classList.remove('active');
+      backdrop.classList.remove('active');
+      newTaskText.value = '';
+    }
+
+    function openLeftDrawer(){ leftDrawer.classList.add('active'); backdrop.classList.add('active'); }
+    function closeLeftDrawer(){ leftDrawer.classList.remove('active'); backdrop.classList.remove('active'); }
+    function openRightDrawer(){ rightDrawer.classList.add('active'); backdrop.classList.add('active'); }
+    function closeRightDrawer(){ rightDrawer.classList.remove('active'); backdrop.classList.remove('active'); }
+
+    function toggleLeft(){ leftDrawer.classList.contains('active') ? closeLeftDrawer() : openLeftDrawer() }
+    function toggleRight(){ rightDrawer.classList.contains('active') ? closeRightDrawer() : openRightDrawer() }
+
+    backdrop.addEventListener('click', () => {
+      closeSheet(); closeLeftDrawer(); closeRightDrawer();
+    });
+
+    /* ======= Render UI ======= */
+    function populateListOptions(){
+      newTaskList.innerHTML = '';
+      Object.keys(state.lists).forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name; opt.textContent = name;
+        if(name === state.current) opt.selected = true;
+        newTaskList.appendChild(opt);
+      });
+    }
+
+    function renderListsPanel(){
+      listsArea.innerHTML = '';
+      Object.keys(state.lists).forEach(name => {
+        const el = document.createElement('div');
+        el.className = 'list-item';
+        el.innerHTML = `<div style="display:flex;align-items:center;gap:10px"><strong>${name}</strong><div class="muted" style="font-size:12px">(${state.lists[name].length})</div></div>
+          <div style="display:flex;gap:8px">
+            <button class="icon-btn" title="Selecionar" data-list="${name}"><i class="fa-solid fa-arrow-up-right-from-square"></i></button>
+            <button class="icon-btn" title="Remover" data-remove="${name}"><i class="fa-solid fa-trash"></i></button>
+          </div>`;
+        listsArea.appendChild(el);
+      });
+
+      // bind
+      listsArea.querySelectorAll('[data-list]').forEach(b => {
+        b.onclick = (e) => {
+          const name = e.currentTarget.dataset.list;
+          state.current = name; save(); render();
+          closeLeftDrawer();
+        };
+      });
+      listsArea.querySelectorAll('[data-remove]').forEach(b => {
+        b.onclick = (e) => {
+          const name = e.currentTarget.dataset.remove;
+          if(confirm('Remover lista "'+name+'"? Todas as tarefas serão removidas.')){
+            delete state.lists[name];
+            // choose fallback list
+            const keys = Object.keys(state.lists);
+            state.current = keys.length ? keys[0] : null;
+            save(); render();
+          }
+        };
+      });
+    }
+
+    function renderTasks(){
+      content.innerHTML = '';
+      if(!state.current){
+        content.innerHTML = '<div class="center muted">Nenhuma lista disponível. <br/> Para criar uma lista clique no menu <i style="color:#524780; margin-left: 10px" class="fa-solid fa-list"></div>';
+        return;
+      }
+      const tasks = state.lists[state.current] || [];
+      const header = document.createElement('div');
+      header.style.marginBottom = '10px';
+      header.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-weight:700;font-size:17px">${state.current}</div>
+          <div class="muted" style="font-size:13px">${tasks.length} tarefas</div>
+        </div>
+        <div>
+          <button class="icon-btn" id="renameListBtn" title="Renomear lista"><i class="fa-solid fa-pen"></i></button>
+        </div>
+      </div>`;
+      content.appendChild(header);
+
+      if(tasks.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'center muted';
+        empty.style.marginTop = '18px';
+        empty.textContent = 'Nenhuma tarefa. Toque em + para adicionar.';
+        content.appendChild(empty);
+      }
+
+      tasks.forEach((task, idx) => {
+        const card = document.createElement('div');
+        card.className = 'task' + (task.completed ? ' completed' : '');
+        card.innerHTML = `
+          <div class="left">
+            <button class="icon-btn toggle" title="Marcar como feito"><i class="${task.completed ? 'fa-solid fa-circle-check' : 'fa-regular fa-circle'}"></i></button>
+            <span title="${task.text}">${task.text}</span>
+          </div>
+          <div class="actions">
+            <button class="icon-btn edit" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>
+            <button class="icon-btn delete" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        `;
+        // events
+        card.querySelector('.toggle').onclick = (e) => {
+          e.stopPropagation();
+          task.completed = !task.completed;
+          save(); renderTasks();
+        };
+        card.querySelector('.edit').onclick = (e) => {
+          e.stopPropagation();
+          const newText = prompt('Editar tarefa:', task.text);
+          if(newText !== null){ // allow empty? ignore empty
+            const t = newText.trim();
+            if(t.length){
+              task.text = t; save(); renderTasks();
+            }
+          }
+        };
+        card.querySelector('.delete').onclick = (e) => {
+          e.stopPropagation();
+          if(confirm('Excluir esta tarefa?')){
+            state.lists[state.current].splice(idx,1);
+            save(); renderTasks();
+          }
+        };
+
+        content.appendChild(card);
+      });
+
+      // rename list
+      const renameBtn = document.getElementById('renameListBtn');
+      if(renameBtn){
+        renameBtn.onclick = () => {
+          const name = prompt('Novo nome para a lista:', state.current);
+          if(name){
+            const trimmed = name.trim();
+            if(trimmed && !state.lists[trimmed]){
+              state.lists[trimmed] = state.lists[state.current];
+              delete state.lists[state.current];
+              state.current = trimmed;
+              save(); render();
+            } else if(state.lists[trimmed]){
+              alert('Já existe uma lista com esse nome.');
+            }
+          }
+        };
+      }
+    }
+
+    function render(){
+      populateListOptions();
+      renderListsPanel();
+      renderTasks();
+      applyTheme();
+    }
+
+    /* ======= Actions ======= */
+    fabBtn.addEventListener('click', openSheet);
+    saveTask.addEventListener('click', () => {
+      const text = newTaskText.value.trim();
+      const list = newTaskList.value;
+      if(!text){ alert('Digite a tarefa'); return; }
+      state.lists[list].push({ text, completed:false });
+      save(); closeSheet(); render();
+    });
+
+    // Keyboard support: Enter = save when sheet open
+    newTaskText.addEventListener('keypress', (e) => {
+      if(e.key === 'Enter') saveTask.click();
+    });
+
+    listsBtn.addEventListener('click', () => {
+      // close opposite if open
+      if(rightDrawer.classList.contains('active')) closeRightDrawer();
+      toggleLeft();
+    });
+
+    settingsBtn.addEventListener('click', () => {
+      if(leftDrawer.classList.contains('active')) closeLeftDrawer();
+      toggleRight();
+    });
+
+    createListBtn.addEventListener('click', () => {
+      const name = newListName.value.trim();
+      if(!name) return;
+      if(state.lists[name]){ alert('Já existe uma lista com esse nome.'); return; }
+      state.lists[name] = [];
+      state.current = name;
+      newListName.value = '';
+      save(); render(); closeLeftDrawer();
+    });
+
+    exportBtn.addEventListener('click', () => {
+      const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'todo-export.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    resetBtn.addEventListener('click', () => {
+      if(confirm('Resetar dados (irá apagar todas as listas e tarefas)?')){
+        localStorage.removeItem(STORAGE_KEY);
+        location.reload();
+      }
+    });
+
+    themeDefault.addEventListener('click', () => { state.theme='default'; save(); applyTheme(); });
+    themeAlt.addEventListener('click', () => { state.theme='dark'; save(); applyTheme(); });
+
+  /* function applyTheme(){
+      if(state.theme === 'dark'){
+        document.documentElement.style.setProperty('--neutral', '#0f1720');
+        document.documentElement.style.setProperty('--text', '#000000');
+        document.documentElement.style.setProperty('--primary', '#2b2f42');
+        document.documentElement.style.setProperty('--primary-dark', '#1b1d2a');
+        document.documentElement.style.setProperty('--primary-light', '#3b6b9a');
+        document.body.style.background = 'linear-gradient(180deg,#071227 0%, #071a2b 100%)';
+      } else {
+        document.documentElement.style.setProperty('--neutral', '#f4f4f4');
+        document.documentElement.style.setProperty('--text', '#1a1a1a');
+        document.documentElement.style.setProperty('--primary', '#524780');
+        document.documentElement.style.setProperty('--primary-dark', '#5e739f');
+        document.documentElement.style.setProperty('--primary-light', '#70aec8');
+        document.body.style.background = 'linear-gradient(180deg,#fbfdff 0%, var(--neutral) 100%)';
+      }
+    }*/
+
+
+    function applyTheme(){
+      if(state.theme === 'dark'){
+        document.documentElement.style.setProperty('--neutral', '#0f1720'); // fundo base
+        document.documentElement.style.setProperty('--text', '#f4f4f4'); // texto claro
+        document.documentElement.style.setProperty('--primary', '#2b2f42');
+        document.documentElement.style.setProperty('--primary-dark', '#1b1d2a');
+        document.documentElement.style.setProperty('--primary-light', '#3b6b9a');
+        document.documentElement.style.setProperty('--second', '#3a4c6b');
+        document.documentElement.style.setProperty('--second-light', '#4a6a8c');
+        document.documentElement.style.setProperty('--second-dark', '#1f2635');
+        document.documentElement.style.setProperty('--accent', '#648cb4');
+        document.body.style.background = 'linear-gradient(180deg,#071227 0%, #071a2b 100%)';
+      } else {
+        document.documentElement.style.setProperty('--neutral', '#f4f4f4');
+        document.documentElement.style.setProperty('--text', '#1a1a1a');
+        document.documentElement.style.setProperty('--primary', '#524780');
+        document.documentElement.style.setProperty('--primary-dark', '#5e739f');
+        document.documentElement.style.setProperty('--primary-light', '#70aec8');
+        document.documentElement.style.setProperty('--second', '#6077a2');
+        document.documentElement.style.setProperty('--second-light', '#75bfd4');
+        document.documentElement.style.setProperty('--second-dark', '#50437d');
+        document.documentElement.style.setProperty('--accent', '#648cb4');
+        document.body.style.background = 'linear-gradient(180deg,#fbfdff 0%, var(--neutral) 100%)';
+      }
+    }
+
+
+    /* ======= Init ======= */
+    window.onload = () => {
+      render();
+    };
+
+
+    // Close drawers with ESC
+    window.addEventListener('keydown', (e) => {
+      if(e.key === 'Escape'){ closeSheet(); closeLeftDrawer(); closeRightDrawer(); }
+    });
+
+    // prevent page from scrolling when sheet open on mobile (basic)
+    backdrop.addEventListener('touchmove', (e)=> e.preventDefault(), { passive:false });
+
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(reg => console.log('Service Worker registrado:', reg))
+          .catch(err => console.error('Erro ao registrar Service Worker:', err));
+      });
+    }
