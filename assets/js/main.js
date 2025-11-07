@@ -7,12 +7,7 @@ let state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
 };
 
 
-const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches
-  || window.navigator.standalone === true;
 
-  if (isInStandaloneMode) {
-    document.getElementById('installBtn').style.display = 'none';
-  } 
 
 
 /* ======= Elements ======= */
