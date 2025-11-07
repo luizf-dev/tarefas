@@ -75,14 +75,16 @@
       </div>
 
       <div style="margin-top:18px">
-        <div class="muted">Backup / Reset</div>
-        <div style="display:flex;gap:8px;margin-top:8px">
-          <button class="icon-btn" id="exportBtn">Exportar Backup</button>
-          <button class="icon-btn" id="resetBtn">Reset</button>
+        <div class="muted">Backup / Reset / Install</div>
+        <div style="display:flex; align-items: flex-start; flex-direction: column;  gap:8px; margin-top:8px">
+          <button class="icon-btn" id="exportBtn">Exportar Backup <i class="fa-solid fa-file-export"></i> </button>
+          <button id="importBtn" class="drawer-btn icon-btn"> Importar dados <i class="fa-solid fa-file-import"></i></button>
+          <input type="file" id="importFile" accept=".json" style="display:none;">
+          <button class="icon-btn" id="resetBtn">Reset App <i class="fa-solid fa-power-off"></i></button>
         </div>
       </div>
 
-      <button id="installBtn" class="drawer-btn">
+      <button id="installBtn" class="drawer-btn icon-btn">
         Instalar Aplicativo <i class="fa-solid fa-download"></i>
       </button>
 
