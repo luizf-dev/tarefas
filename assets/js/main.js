@@ -8,6 +8,18 @@ let state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
 
 
 
+/* ======= Notificações Locais =======*/
+// Solicita permissão ao iniciar (apenas uma vez)
+if ('Notification' in window && Notification.permission !== 'granted') {
+  Notification.requestPermission().then(permission => {
+    if (permission !== 'granted') {
+      console.log('Permissão de notificação negada.');
+    }
+  });
+}
+
+
+
 
 
 /* ======= Elements ======= */
@@ -36,6 +48,12 @@ const resetBtn = document.getElementById('resetBtn');
 const themeDefault = document.getElementById('themeDefault');
 const themeAlt = document.getElementById('themeAlt');   
 
+const reminderSheet = document.getElementById('reminderSheet');
+const reminderDatetime = document.getElementById('reminderDatetime');
+const saveReminder = document.getElementById('saveReminder');
+const cancelReminder = document.getElementById('cancelReminder');
+
+
 
 /* ======= Helpers ======= */
 function save(){
@@ -53,6 +71,21 @@ function closeSheet(){
   backdrop.classList.remove('active');
   newTaskText.value = '';
 }
+
+
+function openReminderSheet(task) {
+  reminderSheet.classList.add('active');
+  backdrop.classList.add('active');
+  reminderDatetime.value = ''; // limpa o campo
+  reminderSheet.dataset.task = task.text; // armazena temporariamente o texto
+}
+
+function closeReminderSheet() {
+  reminderSheet.classList.remove('active');
+  backdrop.classList.remove('active');
+  reminderSheet.dataset.task = '';
+}
+
 
 function openLeftDrawer(){ leftDrawer.classList.add('active'); backdrop.classList.add('active'); }
 function closeLeftDrawer(){ leftDrawer.classList.remove('active'); backdrop.classList.remove('active'); }
@@ -151,6 +184,7 @@ function renderTasks(){
         <span title="${task.text}">${task.text}</span>
       </div>
       <div class="actions">
+        <button class="icon-btn remind" title="Lembrar"><i class="fa-solid fa-bell"></i></button>
         <button class="icon-btn edit" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>
         <button class="icon-btn delete" title="Excluir"><i class="fa-solid fa-trash"></i></button>
       </div>
@@ -169,6 +203,12 @@ function renderTasks(){
       task.completed = !task.completed;
       save(); renderTasks();
     };
+
+    card.querySelector('.remind').onclick = (e) => {
+      e.stopPropagation();
+      openReminderSheet(task); // <--- ✅ AQUI entra o lembrete
+    };
+
     card.querySelector('.edit').onclick = (e) => {
       e.stopPropagation();
       const newText = prompt('Editar tarefa:', task.text);
@@ -179,6 +219,8 @@ function renderTasks(){
         }
       }
     };
+
+
     card.querySelector('.delete').onclick = (e) => {
       e.stopPropagation();
       if(confirm('Excluir esta tarefa?')){
@@ -377,23 +419,6 @@ resetBtn.addEventListener('click', () => {
 themeDefault.addEventListener('click', () => { state.theme='default'; save(); applyTheme(); });
 themeAlt.addEventListener('click', () => { state.theme='dark'; save(); applyTheme(); });
 
-/* function applyTheme(){
-  if(state.theme === 'dark'){
-    document.documentElement.style.setProperty('--neutral', '#0f1720');
-    document.documentElement.style.setProperty('--text', '#000000');
-    document.documentElement.style.setProperty('--primary', '#2b2f42');
-    document.documentElement.style.setProperty('--primary-dark', '#1b1d2a');
-    document.documentElement.style.setProperty('--primary-light', '#3b6b9a');
-    document.body.style.background = 'linear-gradient(180deg,#071227 0%, #071a2b 100%)';
-  } else {
-    document.documentElement.style.setProperty('--neutral', '#f4f4f4');
-    document.documentElement.style.setProperty('--text', '#1a1a1a');
-    document.documentElement.style.setProperty('--primary', '#524780');
-    document.documentElement.style.setProperty('--primary-dark', '#5e739f');
-    document.documentElement.style.setProperty('--primary-light', '#70aec8');
-    document.body.style.background = 'linear-gradient(180deg,#fbfdff 0%, var(--neutral) 100%)';
-  }
-}*/
 
 
 function applyTheme(){
@@ -459,6 +484,54 @@ document.addEventListener('touchend', () => {
     closeLeftDrawer();
   }
 });
+
+
+/* ======= Lembretes ======= */
+
+saveReminder.addEventListener('click', async () => {
+  const datetime = reminderDatetime.value;
+  const text = reminderSheet.dataset.task;
+
+  if (!datetime || !text) {
+    alert('Selecione uma data e hora válidas.');
+    return;
+  }
+
+  const when = new Date(datetime);
+  const now = new Date();
+  const diff = when - now;
+
+  if (diff <= 0) {
+    alert('Selecione um horário futuro.');
+    return;
+  }
+
+  // Solicita permissão de notificação se ainda não tiver
+  if (Notification.permission !== 'granted') {
+    const permission = await Notification.requestPermission();
+
+    if (permission !== 'granted') {
+      alert('As notificações foram bloqueadas. Habilite-as para usar lembretes.');
+      closeReminderSheet();
+      return;
+    }
+  }
+
+  // Agenda o lembrete
+  setTimeout(() => {
+    new Notification('🕒 Lembrete de tarefa', {
+      body: text,
+      icon: '/img/icon-simple.svg'
+    });
+  }, diff);
+
+  closeReminderSheet(); // fecha o modal imediatamente
+  alert(`Lembrete agendado para ${when.toLocaleString('pt-BR')}`);
+});
+
+
+cancelReminder.addEventListener('click', closeReminderSheet);
+
 
 
 
