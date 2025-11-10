@@ -49,21 +49,7 @@
       </div>
 
       <button class="save-btn" id="saveTask">Salvar tarefa</button>
-    </div>
-
-    <!-- Modal de lembrete -->
-    <div id="reminderSheet" class="sheet">
-      <div class="sheet-header">
-        <h3>Agendar lembrete</h3>
-      </div>
-      <div class="sheet-body">
-        <input type="datetime-local" id="reminderDatetime" class="input" />
-      </div>
-      <div class="sheet-footer">
-        <button id="saveReminder" class="btn primary">Agendar</button>
-        <button id="cancelReminder" class="btn secondary">Cancelar</button>
-      </div>
-    </div>
+    </div>    
 
 
     <!-- Left drawer: Minhas listas -->
@@ -109,13 +95,5 @@
   </div>
 
     <script src="/assets/js/main.js"></script>
-    <script>
-      const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches
-      || window.navigator.standalone === true;
-
-      if (isInStandaloneMode) {
-        document.getElementById('installBtn').style.display = 'none';
-      } 
-    </script>
 </body>
 </html>

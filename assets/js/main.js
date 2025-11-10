@@ -1,26 +1,10 @@
- /* ======= Data model (localStorage) ======= */
+/* ======= Data model (localStorage) ======= */
 const STORAGE_KEY = 'todo_app_v2';
 let state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
   lists: {}, // começa vazio
   current: null, // nenhuma lista selecionada
   theme: 'default'
 };
-
-
-
-/* ======= Notificações Locais =======*/
-// Solicita permissão ao iniciar (apenas uma vez)
-if ('Notification' in window && Notification.permission !== 'granted') {
-  Notification.requestPermission().then(permission => {
-    if (permission !== 'granted') {
-      console.log('Permissão de notificação negada.');
-    }
-  });
-}
-
-
-
-
 
 /* ======= Elements ======= */
 const content = document.getElementById('content');
@@ -46,97 +30,81 @@ const importFile = document.getElementById('importFile');
 
 const resetBtn = document.getElementById('resetBtn');
 const themeDefault = document.getElementById('themeDefault');
-const themeAlt = document.getElementById('themeAlt');   
-
-const reminderSheet = document.getElementById('reminderSheet');
-const reminderDatetime = document.getElementById('reminderDatetime');
-const saveReminder = document.getElementById('saveReminder');
-const cancelReminder = document.getElementById('cancelReminder');
-
-
+const themeAlt = document.getElementById('themeAlt');
 
 /* ======= Helpers ======= */
-function save(){
+function save() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
-function openSheet(){
+function openSheet() {
   sheet.classList.add('active');
   backdrop.classList.add('active');
   newTaskText.focus();
   populateListOptions();
 }
-function closeSheet(){
+
+function closeSheet() {
   sheet.classList.remove('active');
   backdrop.classList.remove('active');
   newTaskText.value = '';
 }
 
+function openLeftDrawer() { leftDrawer.classList.add('active'); backdrop.classList.add('active'); }
+function closeLeftDrawer() { leftDrawer.classList.remove('active'); backdrop.classList.remove('active'); }
+function openRightDrawer() { rightDrawer.classList.add('active'); backdrop.classList.add('active'); }
+function closeRightDrawer() { rightDrawer.classList.remove('active'); backdrop.classList.remove('active'); }
 
-function openReminderSheet(task) {
-  reminderSheet.classList.add('active');
-  backdrop.classList.add('active');
-  reminderDatetime.value = ''; // limpa o campo
-  reminderSheet.dataset.task = task.text; // armazena temporariamente o texto
-}
-
-function closeReminderSheet() {
-  reminderSheet.classList.remove('active');
-  backdrop.classList.remove('active');
-  reminderSheet.dataset.task = '';
-}
-
-
-function openLeftDrawer(){ leftDrawer.classList.add('active'); backdrop.classList.add('active'); }
-function closeLeftDrawer(){ leftDrawer.classList.remove('active'); backdrop.classList.remove('active'); }
-function openRightDrawer(){ rightDrawer.classList.add('active'); backdrop.classList.add('active'); }
-function closeRightDrawer(){ rightDrawer.classList.remove('active'); backdrop.classList.remove('active'); }
-
-function toggleLeft(){ leftDrawer.classList.contains('active') ? closeLeftDrawer() : openLeftDrawer() }
-function toggleRight(){ rightDrawer.classList.contains('active') ? closeRightDrawer() : openRightDrawer() }
+function toggleLeft() { leftDrawer.classList.contains('active') ? closeLeftDrawer() : openLeftDrawer(); }
+function toggleRight() { rightDrawer.classList.contains('active') ? closeRightDrawer() : openRightDrawer(); }
 
 backdrop.addEventListener('click', () => {
   closeSheet(); closeLeftDrawer(); closeRightDrawer();
 });
 
 /* ======= Render UI ======= */
-function populateListOptions(){
+function populateListOptions() {
   newTaskList.innerHTML = '';
   Object.keys(state.lists).forEach(name => {
     const opt = document.createElement('option');
-    opt.value = name; opt.textContent = name;
-    if(name === state.current) opt.selected = true;
+    opt.value = name;
+    opt.textContent = name;
+    if (name === state.current) opt.selected = true;
     newTaskList.appendChild(opt);
   });
 }
 
-function renderListsPanel(){
+function renderListsPanel() {
   listsArea.innerHTML = '';
   Object.keys(state.lists).forEach(name => {
     const el = document.createElement('div');
     el.className = 'list-item';
-    el.innerHTML = `<div style="display:flex;align-items:center;gap:10px"><strong>${name}</strong><div class="muted" style="font-size:12px">(${state.lists[name].length})</div></div>
+    el.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px">
+        <strong>${name}</strong>
+        <div class="muted" style="font-size:12px">(${state.lists[name].length})</div>
+      </div>
       <div style="display:flex;gap:8px">
         <button class="icon-btn" title="Selecionar" data-list="${name}"><i class="fa-solid fa-arrow-up-right-from-square"></i></button>
         <button class="icon-btn" title="Remover" data-remove="${name}"><i class="fa-solid fa-trash"></i></button>
-      </div>`;
+      </div>
+    `;
     listsArea.appendChild(el);
   });
 
   // bind
   listsArea.querySelectorAll('[data-list]').forEach(b => {
-    b.onclick = (e) => {
+    b.onclick = e => {
       const name = e.currentTarget.dataset.list;
       state.current = name; save(); render();
       closeLeftDrawer();
     };
   });
   listsArea.querySelectorAll('[data-remove]').forEach(b => {
-    b.onclick = (e) => {
+    b.onclick = e => {
       const name = e.currentTarget.dataset.remove;
-      if(confirm('Remover lista "'+name+'"? Todas as tarefas serão removidas.')){
+      if (confirm(`Remover lista "${name}"? Todas as tarefas serão removidas.`)) {
         delete state.lists[name];
-        // choose fallback list
         const keys = Object.keys(state.lists);
         state.current = keys.length ? keys[0] : null;
         save(); render();
@@ -145,29 +113,30 @@ function renderListsPanel(){
   });
 }
 
-function renderTasks(){
+function renderTasks() {
   content.innerHTML = '';
-  if(!state.current){
-    content.innerHTML = '<div class="center muted">Nenhuma lista disponível. <br/> Para criar uma lista clique no menu <i style="color:#524780; margin-left: 10px" class="fa-solid fa-list"></div>';
+  if (!state.current) {
+    content.innerHTML = '<div class="center muted">Nenhuma lista disponível. <br/> Para criar uma lista clique no menu <i style="color:#524780; margin-left: 10px" class="fa-solid fa-list"></i></div>';
     return;
   }
   const tasks = state.lists[state.current] || [];
   const header = document.createElement('div');
   header.style.marginBottom = '10px';
-  header.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between">
-    <div>
-      <div style="font-weight:700;font-size:17px">${state.current}</div>
-      <div class="muted" style="font-size:13px">${tasks.length} tarefas</div>
+  header.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-weight:700;font-size:17px">${state.current}</div>
+        <div class="muted" style="font-size:13px">${tasks.length} tarefas</div>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button class="icon-btn" id="shareListBtn" title="Compartilhar lista"><i class="fa-solid fa-share-nodes"></i></button>
+        <button class="icon-btn" id="renameListBtn" title="Renomear lista"><i class="fa-solid fa-pen"></i></button>
+      </div>
     </div>
-    <div style="display:flex;gap:6px;">
-      <button class="icon-btn" id="shareListBtn" title="Compartilhar lista"><i class="fa-solid fa-share-nodes"></i></button>
-      <button class="icon-btn" id="renameListBtn" title="Renomear lista"><i class="fa-solid fa-pen"></i></button>
-    </div>
-  </div>`;
-
+  `;
   content.appendChild(header);
 
-  if(tasks.length === 0) {
+  if (tasks.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'center muted';
     empty.style.marginTop = '18px';
@@ -184,47 +153,37 @@ function renderTasks(){
         <span title="${task.text}">${task.text}</span>
       </div>
       <div class="actions">
-        <button class="icon-btn remind" title="Lembrar"><i class="fa-solid fa-bell"></i></button>
         <button class="icon-btn edit" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>
         <button class="icon-btn delete" title="Excluir"><i class="fa-solid fa-trash"></i></button>
       </div>
     `;
 
-    // Expande/colapsa ao clicar no card
-    card.addEventListener('click', (e) => {
-      // evita conflito com botões dentro do card
+    card.addEventListener('click', e => {
       if (e.target.closest('.icon-btn')) return;
       card.classList.toggle('expanded');
     });
 
-    // events
-    card.querySelector('.toggle').onclick = (e) => {
+    card.querySelector('.toggle').onclick = e => {
       e.stopPropagation();
       task.completed = !task.completed;
       save(); renderTasks();
     };
 
-    card.querySelector('.remind').onclick = (e) => {
-      e.stopPropagation();
-      openReminderSheet(task); // <--- ✅ AQUI entra o lembrete
-    };
-
-    card.querySelector('.edit').onclick = (e) => {
+    card.querySelector('.edit').onclick = e => {
       e.stopPropagation();
       const newText = prompt('Editar tarefa:', task.text);
-      if(newText !== null){ // allow empty? ignore empty
+      if (newText !== null) {
         const t = newText.trim();
-        if(t.length){
+        if (t.length) {
           task.text = t; save(); renderTasks();
         }
       }
     };
 
-
-    card.querySelector('.delete').onclick = (e) => {
+    card.querySelector('.delete').onclick = e => {
       e.stopPropagation();
-      if(confirm('Excluir esta tarefa?')){
-        state.lists[state.current].splice(idx,1);
+      if (confirm('Excluir esta tarefa?')) {
+        state.lists[state.current].splice(idx, 1);
         save(); renderTasks();
       }
     };
@@ -232,65 +191,52 @@ function renderTasks(){
     content.appendChild(card);
   });
 
-  // rename list
   const renameBtn = document.getElementById('renameListBtn');
-  if(renameBtn){
+  if (renameBtn) {
     renameBtn.onclick = () => {
       const name = prompt('Novo nome para a lista:', state.current);
-      if(name){
+      if (name) {
         const trimmed = name.trim();
-        if(trimmed && !state.lists[trimmed]){
+        if (trimmed && !state.lists[trimmed]) {
           state.lists[trimmed] = state.lists[state.current];
           delete state.lists[state.current];
           state.current = trimmed;
           save(); render();
-        } else if(state.lists[trimmed]){
+        } else if (state.lists[trimmed]) {
           alert('Já existe uma lista com esse nome.');
         }
       }
     };
   }
 
-
-
-  // compartilhar lista
   const shareBtn = document.getElementById('shareListBtn');
   if (shareBtn) {
     shareBtn.onclick = () => {
       const listName = state.current;
       const tasks = state.lists[listName] || [];
-
       if (tasks.length === 0) {
         alert('Essa lista está vazia.');
         return;
       }
-
-      // gera o texto formatado
       let message = `📝 *${listName}*\n\n`;
-      tasks.forEach((t, i) => {
-        const check = t.completed ? '*' : '*';
-        message += `${check} ${t.text}\n`;
+      tasks.forEach(t => {
+        message += `• ${t.text}\n`;
       });
-
-      // tenta usar Web Share API (melhor em mobile)
       if (navigator.share) {
         navigator.share({
           title: `Lista: ${listName}`,
           text: message
         }).catch(err => console.log('Compartilhamento cancelado:', err));
       } else {
-        // fallback pro WhatsApp
         const encoded = encodeURIComponent(message);
         const waUrl = `https://wa.me/?text=${encoded}`;
         window.open(waUrl, '_blank');
       }
     };
   }
-
 }
 
-
-function render(){
+function render() {
   populateListOptions();
   renderListsPanel();
   renderTasks();
@@ -302,40 +248,38 @@ fabBtn.addEventListener('click', openSheet);
 saveTask.addEventListener('click', () => {
   const text = newTaskText.value.trim();
   const list = newTaskList.value;
-  if(!text){ alert('Digite a tarefa'); return; }
-  state.lists[list].push({ text, completed:false });
+  if (!text) { alert('Digite a tarefa'); return; }
+  state.lists[list].push({ text, completed: false });
   save(); closeSheet(); render();
 });
 
-// Keyboard support: Enter = save when sheet open
-newTaskText.addEventListener('keypress', (e) => {
-  if(e.key === 'Enter') saveTask.click();
+newTaskText.addEventListener('keypress', e => {
+  if (e.key === 'Enter') saveTask.click();
 });
 
 listsBtn.addEventListener('click', () => {
-  // close opposite if open
-  if(rightDrawer.classList.contains('active')) closeRightDrawer();
+  if (rightDrawer.classList.contains('active')) closeRightDrawer();
   toggleLeft();
 });
 
 settingsBtn.addEventListener('click', () => {
-  if(leftDrawer.classList.contains('active')) closeLeftDrawer();
+  if (leftDrawer.classList.contains('active')) closeLeftDrawer();
   toggleRight();
 });
 
 createListBtn.addEventListener('click', () => {
   const name = newListName.value.trim();
-  if(!name) return;
-  if(state.lists[name]){ alert('Já existe uma lista com esse nome.'); return; }
+  if (!name) return;
+  if (state.lists[name]) { alert('Já existe uma lista com esse nome.'); return; }
   state.lists[name] = [];
   state.current = name;
   newListName.value = '';
   save(); render(); closeLeftDrawer();
 });
 
-// Exportar backup em json
+/* ======= Backup & Import ======= */
 exportBtn.addEventListener('click', () => {
-  const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -344,60 +288,38 @@ exportBtn.addEventListener('click', () => {
   URL.revokeObjectURL(url);
 });
 
-
-// Importar backup (mesclagem inteligente - compatível com formato atual)
-importBtn.addEventListener('click', () => {
-  importFile.click();
-});
-
-importFile.addEventListener('change', (e) => {
+importBtn.addEventListener('click', () => { importFile.click(); });
+importFile.addEventListener('change', e => {
   const file = e.target.files[0];
   if (!file) return;
-
   const reader = new FileReader();
-  reader.onload = (event) => {
+  reader.onload = event => {
     try {
       const importedData = JSON.parse(event.target.result);
-
       if (!importedData.lists || typeof importedData.lists !== 'object') {
-        alert('Arquivo inválido. O backup precisa ter formato compatível.');
-        return;
+        alert('Arquivo inválido.'); return;
       }
-
-      let newLists = 0;
-      let newTasks = 0;
-
+      let newLists = 0, newTasks = 0;
       for (const [listName, importedTasks] of Object.entries(importedData.lists)) {
-        // Se a lista não existe, adiciona inteira
         if (!state.lists[listName]) {
           state.lists[listName] = importedTasks;
-          newLists++;
-          newTasks += importedTasks.length;
+          newLists++; newTasks += importedTasks.length;
         } else {
-          // Se já existe, adiciona apenas tarefas novas (baseado no texto)
           const existingTasks = state.lists[listName];
           importedTasks.forEach(task => {
             const exists = existingTasks.some(t => t.text === task.text);
-            if (!exists) {
-              existingTasks.push(task);
-              newTasks++;
-            }
+            if (!exists) { existingTasks.push(task); newTasks++; }
           });
         }
       }
-
-      // Atualiza tema e lista atual se existirem no backup
       if (importedData.theme) state.theme = importedData.theme;
       if (importedData.current && state.lists[importedData.current]) {
         state.current = importedData.current;
       }
-
-      save();
-      render();
-
-      alert(`Backup importado com sucesso!\n\n${newLists} novas listas adicionadas\n${newTasks} novas tarefas mescladas.`);
+      save(); render();
+      alert(`Backup importado com sucesso!\n${newLists} listas novas\n${newTasks} tarefas novas.`);
     } catch (err) {
-      alert('Erro ao importar o arquivo: formato inválido.');
+      alert('Erro ao importar o arquivo.');
       console.error(err);
     }
   };
@@ -405,155 +327,84 @@ importFile.addEventListener('change', (e) => {
   e.target.value = '';
 });
 
-
-
-
-
+/* ======= Reset ======= */
 resetBtn.addEventListener('click', () => {
-  if(confirm('Resetar dados (irá apagar todas as listas e tarefas)?')){
+  if (confirm('Resetar dados?')) {
     localStorage.removeItem(STORAGE_KEY);
     location.reload();
   }
 });
 
-themeDefault.addEventListener('click', () => { state.theme='default'; save(); applyTheme(); });
-themeAlt.addEventListener('click', () => { state.theme='dark'; save(); applyTheme(); });
+/* ======= Tema ======= */
+themeDefault.addEventListener('click', () => { state.theme = 'default'; save(); applyTheme(); });
+themeAlt.addEventListener('click', () => { state.theme = 'dark'; save(); applyTheme(); });
 
-
-
-function applyTheme(){
-  if(state.theme === 'dark'){
-    document.documentElement.style.setProperty('--neutral', '#0f1720'); // fundo base
-    document.documentElement.style.setProperty('--text', '#f4f4f4'); // texto claro
-    document.documentElement.style.setProperty('--primary', '#2b2f42');
-    document.documentElement.style.setProperty('--primary-dark', '#1b1d2a');
-    document.documentElement.style.setProperty('--primary-light', '#3b6b9a');
-    document.documentElement.style.setProperty('--second', '#3a4c6b');
-    document.documentElement.style.setProperty('--second-light', '#4a6a8c');
-    document.documentElement.style.setProperty('--second-dark', '#1f2635');
-    document.documentElement.style.setProperty('--accent', '#648cb4');
+function applyTheme() {
+  if (state.theme === 'dark') {
+    document.documentElement.style.setProperty('--neutral', '#0f1720');
+    document.documentElement.style.setProperty('--text', '#f4f4f4');
     document.body.style.background = 'linear-gradient(180deg,#071227 0%, #071a2b 100%)';
   } else {
     document.documentElement.style.setProperty('--neutral', '#f4f4f4');
     document.documentElement.style.setProperty('--text', '#1a1a1a');
-    document.documentElement.style.setProperty('--primary', '#524780');
-    document.documentElement.style.setProperty('--primary-dark', '#5e739f');
-    document.documentElement.style.setProperty('--primary-light', '#70aec8');
-    document.documentElement.style.setProperty('--second', '#6077a2');
-    document.documentElement.style.setProperty('--second-light', '#75bfd4');
-    document.documentElement.style.setProperty('--second-dark', '#50437d');
-    document.documentElement.style.setProperty('--accent', '#648cb4');
     document.body.style.background = 'linear-gradient(180deg,#fbfdff 0%, var(--neutral) 100%)';
   }
 }
 
-
-
-  /* ======= Touch gestures to close side drawers ======= */
-let touchStartX = 0;
-let touchEndX = 0;
-let touchStartY = 0;
-let touchEndY = 0;
-
-document.addEventListener('touchstart', (e) => {
-  const touch = e.changedTouches[0];
-  touchStartX = touch.pageX;
-  touchStartY = touch.pageY;
+/* ======= Gestos ======= */
+let touchStartX = 0, touchEndX = 0, touchStartY = 0, touchEndY = 0;
+document.addEventListener('touchstart', e => {
+  const t = e.changedTouches[0]; touchStartX = t.pageX; touchStartY = t.pageY;
 });
-
-document.addEventListener('touchmove', (e) => {
-  const touch = e.changedTouches[0];
-  touchEndX = touch.pageX;
-  touchEndY = touch.pageY;
+document.addEventListener('touchmove', e => {
+  const t = e.changedTouches[0]; touchEndX = t.pageX; touchEndY = t.pageY;
 });
-
 document.addEventListener('touchend', () => {
   const deltaX = touchEndX - touchStartX;
   const deltaY = Math.abs(touchEndY - touchStartY);
-
-  // Ignora gestos verticais ou muito curtos
   if (Math.abs(deltaX) < 50 || deltaY > 80) return;
-
-  // 👉 Deslizar para a direita fecha o drawer direito
-  if (deltaX > 50 && rightDrawer.classList.contains('active')) {
-    closeRightDrawer();
-  }
-
-  // 👈 Deslizar para a esquerda fecha o drawer esquerdo
-  if (deltaX < -50 && leftDrawer.classList.contains('active')) {
-    closeLeftDrawer();
-  }
+  if (deltaX > 50 && rightDrawer.classList.contains('active')) closeRightDrawer();
+  if (deltaX < -50 && leftDrawer.classList.contains('active')) closeLeftDrawer();
 });
-
-
-/* ======= Lembretes ======= */
-
-saveReminder.addEventListener('click', async () => {
-  const datetime = reminderDatetime.value;
-  const text = reminderSheet.dataset.task;
-
-  if (!datetime || !text) {
-    alert('Selecione uma data e hora válidas.');
-    return;
-  }
-
-  const when = new Date(datetime);
-  const now = new Date();
-  const diff = when - now;
-
-  if (diff <= 0) {
-    alert('Selecione um horário futuro.');
-    return;
-  }
-
-  // Solicita permissão de notificação se ainda não tiver
-  if (Notification.permission !== 'granted') {
-    const permission = await Notification.requestPermission();
-
-    if (permission !== 'granted') {
-      alert('As notificações foram bloqueadas. Habilite-as para usar lembretes.');
-      closeReminderSheet();
-      return;
-    }
-  }
-
-  // Agenda o lembrete
-  setTimeout(() => {
-    new Notification('🕒 Lembrete de tarefa', {
-      body: text,
-      icon: '/img/icon-simple.svg'
-    });
-  }, diff);
-
-  closeReminderSheet(); // fecha o modal imediatamente
-  alert(`Lembrete agendado para ${when.toLocaleString('pt-BR')}`);
-});
-
-
-cancelReminder.addEventListener('click', closeReminderSheet);
-
-
-
 
 /* ======= Init ======= */
-window.onload = () => {
-  render();
-};
-
-
-// Close drawers with ESC
-window.addEventListener('keydown', (e) => {
-  if(e.key === 'Escape'){ closeSheet(); closeLeftDrawer(); closeRightDrawer(); }
+window.onload = () => { render(); };
+window.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeSheet(); closeLeftDrawer(); closeRightDrawer(); }
 });
+backdrop.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
 
-// prevent page from scrolling when sheet open on mobile (basic)
-backdrop.addEventListener('touchmove', (e)=> e.preventDefault(), { passive:false });
 
 
 if ('serviceWorker' in navigator) {
-window.addEventListener('load', () => {
-  navigator.serviceWorker.register('/service-worker.js')
-    .then(reg => console.log('Service Worker registrado:', reg))
-    .catch(err => console.error('Erro ao registrar Service Worker:', err));
-});
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js')
+      .then(reg => console.log('Service Worker registrado:', reg))
+      .catch(err => console.error('Erro ao registrar Service Worker:', err));
+  });
 }
+
+
+let deferredPrompt;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('installBtn').style.display = 'block'; // mostra o botão
+});
+
+const installBtn = document.getElementById('installBtn');
+if (installBtn) {
+  installBtn.addEventListener('click', async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log(`Instalação: ${outcome}`);
+      deferredPrompt = null;
+      installBtn.style.display = 'none';
+    } else {
+      alert('O app já pode estar instalado ou o navegador não suporta PWA.');
+    }
+  });
+}
+
