@@ -386,25 +386,56 @@ if ('serviceWorker' in navigator) {
 
 
 let deferredPrompt;
+const installBtn = document.getElementById('installBtn');
 
+// Detecta o evento antes da instalação
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredPrompt = e;
-  document.getElementById('installBtn').style.display = 'block'; // mostra o botão
+  installBtn.style.display = 'block'; // mostra o botão quando pode instalar
 });
 
-const installBtn = document.getElementById('installBtn');
+// Detecta quando o app foi instalado
+window.addEventListener('appinstalled', () => {
+  console.log('✅ App instalado com sucesso!');
+  alert('Aplicativo instalado com sucesso!');
+  installBtn.style.display = 'none'; // oculta o botão após instalação
+  deferredPrompt = null;
+});
+
+// Esconde o botão se já estiver rodando em modo PWA
+const isInStandaloneMode =
+  window.matchMedia('(display-mode: standalone)').matches ||
+  window.navigator.standalone === true;
+
+if (isInStandaloneMode) {
+  installBtn.style.display = 'none';
+}
+
 if (installBtn) {
   installBtn.addEventListener('click', async () => {
     if (deferredPrompt) {
+      //const confirmar = confirm("📲 Deseja instalar o aplicativo 'Minhas Tarefas'?");
+     // if (!confirmar) return;
+
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
-      console.log(`Instalação: ${outcome}`);
+
+      if (outcome === 'accepted') {
+        console.log('Usuário aceitou a instalação');
+        installBtn.style.display = 'none';
+      } else {
+        console.log('Usuário cancelou a instalação');
+      }
+
       deferredPrompt = null;
-      installBtn.style.display = 'none';
     } else {
-      alert('O app já pode estar instalado ou o navegador não suporta PWA.');
+      alert('⚠️ O app já pode estar instalado ou o navegador não suporta instalação PWA.');
     }
   });
 }
+
+
+
+
 
