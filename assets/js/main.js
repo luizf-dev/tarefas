@@ -150,7 +150,11 @@ function renderTasks() {
     card.innerHTML = `
       <div class="left">
         <button class="icon-btn toggle" title="Marcar como feito"><i class="${task.completed ? 'fa-solid fa-circle-check' : 'fa-regular fa-circle'}"></i></button>
-        <span title="${task.text}">${task.text}</span>
+        ${
+          task.text.startsWith('http://') || task.text.startsWith('https://')
+            ? `<a href="${task.text}" target="_blank" title="${task.text}" class="task-link">${task.text}</a>`
+            : `<span title="${task.text}">${task.text}</span>`
+        }
       </div>
       <div class="actions">
         <button class="icon-btn edit" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>
